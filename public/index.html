@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kairolog (Memory Transformer)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #09f;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-2xl mx-auto">
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h1 class="text-3xl font-semibold mb-2 text-left">Kairolog</h1>
+            <!-- <bold>Transform a memory</bold> -->
+            <!-- <p class="text-left text-sm text-gray-600 mb-6">Paste memory -> Describe how to transform it -> Click Transform</p> -->
+            <p class="text-left text-sm text-gray-600 mb-6">An interface to transform a memory (open-source & bring-your-own-keys)</p>
+            
+            <div class="mb-4">
+                <label for="textInput" class="block text-sm font-medium mb-1">Input:</label>
+                <textarea id="textInput" rows="6" class="w-full p-2 border rounded-md" placeholder="Paste transcript (from a conversation or voice note)"></textarea>
+            </div>
+            
+            <div class="mb-4">
+                <label for="transformPrompt" class="block text-sm font-medium mb-1">Transform to:</label>
+                <input type="text" id="transformPrompt" class="w-full p-2 border rounded-md" placeholder="'a haiku', 'pirate speak', 'a twitter thread', etc."">
+            </div>
+            
+            <div class="mb-4">
+                <label for="outputStyle" class="block text-sm font-medium mb-1">Output format:</label>
+                <select id="outputStyle" class="w-full p-2 border rounded-md">
+                    <option value="default">Unformatted</option>
+                    <option value="twitter">Twitter Thread</option>
+                </select>
+            </div>
+            
+            <button id="transformButton" class="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600">Transform</button>
+            
+            <div id="loadingIndicator" class="hidden mt-4 flex justify-center items-center">
+                <div class="spinner mr-3"></div>
+                <span>Transforming...</span>
+            </div>
+
+            <div id="outputContainer" class="mt-6 hidden">
+                <h2 class="text-lg font-semibold mb-2">Output:</h2>
+                <div id="output" class="bg-gray-100 p-4 rounded-md min-h-[100px]"></div>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-lg font-semibold mb-4">Anthropic API Settings</h2>
+            <div class="mb-4">
+                <label for="apiKey" class="block text-sm font-medium mb-1">Your Anthropic API Key:</label>
+                <input type="password" id="apiKey" class="w-full p-2 border rounded-md" placeholder="Paste your API key here">
+            </div>
+            <button id="saveApiKey" class="bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600">Save API Key</button>
+        </div>
+    </div>
+
+    <footer class="mt-8 text-center text-sm text-gray-600">
+        <p>Paste text, choose how to transform it, and click Transform. It's that simple.</p>
+    </footer>
+    
+    <script>
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Copied to clipboard!');
+            }, (err) => {
+                console.error('Could not copy text: ', err);
+            });
+        }
+
+        let apiKey = localStorage.getItem('anthropicApiKey') || '';
+
+        document.getElementById('apiKey').value = apiKey;
+
+        document.getElementById('saveApiKey').addEventListener('click', () => {
+            apiKey = document.getElementById('apiKey').value;
+            localStorage.setItem('anthropicApiKey', apiKey);
+            alert('API Key saved!');
+        });
+
+        document.getElementById('transformButton').addEventListener('click', async () => {
+            if (!apiKey) {
+                alert('Please enter your Anthropic API Key in the settings below.');
+                return;
+            }
+
+            const textInput = document.getElementById('textInput').value;
+            const transformPrompt = document.getElementById('transformPrompt').value;
+            const outputStyle = document.getElementById('outputStyle').value;
+            const outputElement = document.getElementById('output');
+            const outputContainer = document.getElementById('outputContainer');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+
+            loadingIndicator.classList.remove('hidden');
+            outputContainer.classList.add('hidden');
+            outputElement.innerHTML = '';
+
+            try {
+                const response = await fetch('/transform', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': apiKey
+                    },
+                    body: JSON.stringify({ textInput, transformPrompt }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const result = await response.json();
+                let transformedOutput = result.transformedOutput;
+                
+                if (outputStyle === 'twitter') {
+                    const tweets = transformedOutput.match(/.{1,280}(\s|$)/g);
+                    transformedOutput = tweets.map((tweet, index) => 
+                        `<div class="mb-4 p-4 bg-white rounded-lg shadow">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-gray-500">${index + 1}/${tweets.length}</span>
+                                <button onclick="copyToClipboard('${tweet.trim().replace(/'/g, "\\'")}');" class="text-blue-500 hover:text-blue-600">Copy</button>
+                            </div>
+                            <p>${tweet.trim()}</p>
+                         </div>`
+                    ).join('');
+                } else {
+                    transformedOutput = `<div class="whitespace-pre-wrap">${transformedOutput}</div>`;
+                }
+
+                outputElement.innerHTML = transformedOutput;
+                outputContainer.classList.remove('hidden');
+            } catch (error) {
+                console.error('Error:', error);
+                outputElement.innerHTML = '<p class="text-red-500">An error occurred during transformation.</p>';
+                outputContainer.classList.remove('hidden');
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
