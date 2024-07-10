@@ -2,7 +2,7 @@
 
 Kairolog is an open-source webapp that transforms memories from conversations or audio journals, using the Claude API. Paste transcripts or text and transform them into different styles or formats.
 
-Created by the team at twitter.com/onspacebar
+Created by [Daniel](http://twitter.com/dcarmitage) from [Spacebar](http://twitter.com/onspacebar)
 
 ## Features
 
