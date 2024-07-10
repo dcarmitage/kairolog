@@ -1,6 +1,6 @@
-# Kairolog: Memory Transformer
+# Kairolog: Idea Transformer
 
-Kairolog is an open-source webapp that transforms memories from conversations or audio journals, using the Claude API. Paste transcripts or text and transform them into different styles or formats.
+Kairolog is an open-source webapp that transforms ideas from conversations or audio journals, using the Claude API. Paste in a transcript and transform it into something shareable.
 
 Created by [Daniel](http://twitter.com/dcarmitage) from [Spacebar](http://twitter.com/onspacebar)
 
