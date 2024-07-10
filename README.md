@@ -13,7 +13,7 @@ Kairolog is an open-source webapp that transforms memories from conversations or
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/kairolog.git
+   git clone https://github.com/dcarmitage/kairolog.git
    cd kairolog
    ```
 
